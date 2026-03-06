@@ -72,7 +72,7 @@ class PIDController : public rclcpp::Node
             "odom", 10, std::bind(&PIDController::odom_callback, this, _1));
 
         setpoint_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-            "cmd_pose", 10, std::bind(&PIDController::setpoint_callback, this, _1));
+            "setpoint", 10, std::bind(&PIDController::setpoint_callback, this, _1));
 
         timer_ = this->create_wall_timer(10ms, std::bind(&PIDController::timer_callback, this));
         last_time_ = this->now();
@@ -128,22 +128,17 @@ class PIDController : public rclcpp::Node
 
     void setpoint_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
     {
-        // Safety check: ensure the array has enough elements
-        // Assuming format: [x, y, z, roll, pitch, yaw]
         if (msg->data.size() < 6) {
             RCLCPP_WARN(this->get_logger(), "Received setpoint array too small! Need 6 values.");
             return;
         }
 
-        // 1. Update internal target state
-        target_state_.x     = msg->data[0];
-        target_state_.y     = msg->data[1];
-        target_state_.z     = msg->data[2];
-        target_state_.roll  = msg->data[3];
-        target_state_.pitch = msg->data[4];
-        target_state_.yaw   = msg->data[5];
+        target_state_.x = msg->data[0];
+        target_state_.y = msg->data[1];
+        target_state_.z = msg->data[2];
 
-        // 2. Update PIDs
+        // TODO: Add the controller to control the x,y position 
+
         pid_alt_.setSetpoint(target_state_.z);
         pid_roll_.setSetpoint(target_state_.roll);
         pid_pitch_.setSetpoint(target_state_.pitch);

@@ -46,15 +46,16 @@ class LQRController : public rclcpp::Node
         A_inv_ = A.inverse();
 
         K.setZero();
-        // Initialize the 4x12 K Matrix
         K << -0.00000000,-0.00000000,5.47722558,-0.00000000, -0.00000000,4.62943590,0.00000000,0.00000000, -0.00000000,-0.00000000,0.00000000,-0.00000000, 0.00000000,-4.47213595,-0.00000000,0.00000000, -3.36841250,-0.00000000,6.96046028,0.00000000, -0.00000000,0.76409403,0.00000000,-0.00000000, 4.47213595,0.00000000,0.00000000,3.59823503, 0.00000000,0.00000000,-0.00000000,8.71652470, -0.00000000,-0.00000000,1.14904894,-0.00000000,-0.00000000,0.00000000,0.00000000,-0.00000000, -0.00000000,0.00000000,-0.00000000,-0.00000000, 1.41421356,-0.00000000,-0.00000000,0.61346339;
-        
 
         motor_speed_pub_ =
             this->create_publisher<actuator_msgs::msg::Actuators>("motor_commands", 10);
 
         odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "odom", 10, std::bind(&LQRController::odom_callback, this, _1));
+
+        setpoint_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+            "setpoint", 10, std::bind(&LQRController::setpoint_callback, this, _1));
 
         timer_ = this->create_wall_timer(10ms, std::bind(&LQRController::timer_callback, this));
         last_time_ = this->now();
@@ -65,12 +66,10 @@ class LQRController : public rclcpp::Node
 
     void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
-        // 1. Position
         quad_state_.x = msg->pose.pose.position.x;
         quad_state_.y = msg->pose.pose.position.y;
         quad_state_.z = msg->pose.pose.position.z;
 
-        // 2. Orientation (Quaternion to Euler RPY)
         tf2::Quaternion q(
             msg->pose.pose.orientation.x,
             msg->pose.pose.orientation.y,
@@ -78,15 +77,20 @@ class LQRController : public rclcpp::Node
             msg->pose.pose.orientation.w);
         tf2::Matrix3x3(q).getRPY(quad_state_.roll, quad_state_.pitch, quad_state_.yaw);
 
-        // 3. Linear Velocities
         quad_state_.d_x = msg->twist.twist.linear.x;
         quad_state_.d_y = msg->twist.twist.linear.y;
         quad_state_.d_z = msg->twist.twist.linear.z;
 
-        // 4. Angular Velocities (Rates)
         quad_state_.d_roll  = msg->twist.twist.angular.x;
         quad_state_.d_pitch = msg->twist.twist.angular.y;
         quad_state_.d_yaw   = msg->twist.twist.angular.z;
+    }
+
+    void setpoint_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+    {
+        target_state_.x = msg->data[0];
+        target_state_.y = msg->data[1];
+        target_state_.z = msg->data[2];
     }
 
     void timer_callback()
@@ -104,21 +108,17 @@ class LQRController : public rclcpp::Node
                 target_state_.roll, target_state_.pitch, target_state_.yaw,
                 target_state_.d_roll, target_state_.d_pitch, target_state_.d_yaw;
 
-        // 3. LQR Control Law: u = -K * (x - x_ref)
         Eigen::Vector4d u = -K * (x - x_ref);
 
-        // 4. Add Feed-Forward Hover Thrust
+        // Feed forward
         u(0) += m * g; 
 
-        // 5. Motor Mixing: Solve for individual motor forces
         Eigen::Vector4d f = A_inv_ * u;
 
-        // 6. Convert Force to Velocity and Publish
         auto motor_msg = actuator_msgs::msg::Actuators();
         motor_msg.header.stamp = this->now();
     
         for (int i = 0; i < 4; ++i) {
-            // Ensure force is non-negative before sqrt
             double force = std::max(0.0, f[i]);
             motor_msg.velocity.push_back(std::sqrt(force / k_F));
         }
