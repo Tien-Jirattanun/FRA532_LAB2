@@ -49,18 +49,19 @@ class PIDController : public rclcpp::Node
         callback_handle_ = this->add_on_set_parameters_callback(
             std::bind(&PIDController::parameters_callback, this, _1));
 
-        // 3. Pre-calculate Allocation Matrix Inverse
 
-        float dy_f = 0.22; // Front arm x
-        float dy_r = 0.2; // Rear arm x
-        float dx_f = 0.13; // Left arm y
-        float dx_r = 0.13; // Right arm y
-        float k_m = 0.06; // Drag-to-lift ratio (from your param xacro)
+        double dx_f = 0.13;  
+        double dx_r = 0.13;  
+        double dy_l = 0.22;  
+        double dy_r = 0.22; 
+        double dy_rl = 0.20; 
+        double dy_rr = 0.20; 
+        double k_m = 0.06;  
 
-        A << 1,     1,      1,      1,      // Thrust
-            -dy_f,  dy_f,   dy_r,  -dy_r,   // Roll (FR is -, FL is +, RL is +, RR is -)
-            -dx_f, -dx_f,   dx_r,   dx_r,   // Pitch (Front is -, Rear is +)
-            k_m,  -k_m,    k_m,   -k_m;    // Yaw (Check CW/CCW directions) 
+        A << 1.0,    1.0,    1.0,    1.0,    
+            -dy_r,   dy_rl,  dy_l,  -dy_rr,  
+            -dx_f,   dx_r,  -dx_f,   dx_r,   
+            -k_m,    -k_m,   k_m,   k_m;   
 
         A_inv_ = A.inverse();
 
@@ -175,17 +176,17 @@ class PIDController : public rclcpp::Node
         float t_psi = pid_yaw_.update(quad_state_.yaw, dt);
 
         // 2. Mixing
-        Eigen::Vector4f u(T, t_phi, t_theta, t_psi);
-        Eigen::Vector4f f = A_inv_ * u;
+        Eigen::Vector4d u(T, t_phi, t_theta, t_psi);
+        Eigen::Vector4d f = A_inv_ * u;
 
-        const float k_F = 8.54858e-06f;
+        const double k_F = 8.54858e-06f;
         auto motor_msg = actuator_msgs::msg::Actuators();
         motor_msg.header.stamp = this->now();
         motor_msg.header.frame_id = "base_link";
 
         for (int i = 0; i < 4; ++i)
         {
-            float force = std::max(0.0f, f[i]);
+            double force = std::max(0.0, f[i]);
             motor_msg.velocity.push_back(std::sqrt(force / k_F));
         }
 
@@ -198,8 +199,8 @@ class PIDController : public rclcpp::Node
 
     PID pid_roll_, pid_pitch_, pid_yaw_, pid_alt_;
     State quad_state_{}, target_state_{};
-    Eigen::Matrix4f A;
-    Eigen::Matrix4f A_inv_;
+    Eigen::Matrix4d A;
+    Eigen::Matrix4d A_inv_;
     rclcpp::Time last_time_;
     OnSetParametersCallbackHandle::SharedPtr callback_handle_;
     rclcpp::TimerBase::SharedPtr timer_;
