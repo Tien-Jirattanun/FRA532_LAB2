@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             '2d_trajectory = quad_trajectory.2d_trajectory:main',
+            '3d_trajectory = quad_trajectory.3d_trajectory:main',
         ],
     },
 )

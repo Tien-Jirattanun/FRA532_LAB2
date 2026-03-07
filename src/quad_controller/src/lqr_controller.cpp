@@ -1,6 +1,8 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <vector>
+#include <algorithm>
+#include <iostream>
 
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include "actuator_msgs/msg/actuators.hpp"
@@ -28,7 +30,7 @@ class LQRController : public rclcpp::Node
     {
 
         // Initial default hover state
-        target_state_ = {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        target_state_ = {0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
         double dx_f = 0.13;  
         double dx_r = 0.13;  
@@ -46,7 +48,7 @@ class LQRController : public rclcpp::Node
         A_inv_ = A.inverse();
 
         K.setZero();
-        K <<     0.00000000,0.00000000,5.00000000,0.00000000, 0.00000000,4.47213595,0.00000000,0.00000000, 0.00000000,-0.00000000,-0.00000000,0.00000000, -0.00000000,-2.73861279,-0.00000000,-0.00000000, -2.33998973,0.00000000,5.32937049,-0.00000000, -0.00000000,0.64842764,-0.00000000,-0.00000000,2.73861279,-0.00000000,0.00000000,2.50623974, -0.00000000,0.00000000,0.00000000,6.77239615, -0.00000000,-0.00000000,0.99906730,-0.00000000,-0.00000000,-0.00000000,0.00000000,-0.00000000, -0.00000000,0.00000000,0.00000000,-0.00000000, 1.00000000,0.00000000,-0.00000000,0.49537864;
+        K << -0.00000000,0.00000000,4.47213595,-0.00000000, 0.00000000,4.29143424,-0.00000000,-0.00000000, -0.00000000,-0.00000000,-0.00000000,0.00000000,0.00000000,-2.73861279,0.00000000,0.00000000, -2.33998973,-0.00000000,5.32937049,0.00000000, -0.00000000,0.64842764,0.00000000,0.00000000,2.73861279,0.00000000,-0.00000000,2.50623974, 0.00000000,-0.00000000,0.00000000,6.77239615, -0.00000000,0.00000000,0.99906730,0.00000000,0.00000000,0.00000000,-0.00000000,0.00000000, 0.00000000,0.00000000,0.00000000,0.00000000, 1.00000000,-0.00000000,0.00000000,0.49537864;
 
         motor_speed_pub_ =
             this->create_publisher<actuator_msgs::msg::Actuators>("motor_commands", 10);
@@ -107,8 +109,12 @@ class LQRController : public rclcpp::Node
                  target_state_.d_x, target_state_.d_y, target_state_.d_z,
                 target_state_.roll, target_state_.pitch, target_state_.yaw,
                 target_state_.d_roll, target_state_.d_pitch, target_state_.d_yaw;
-
-        Eigen::Vector4d u = -K * (x - x_ref);
+        
+        Eigen::Matrix<double, 12, 1> error = x - x_ref;
+        error(0) = std::clamp(error(0), -1.5, 1.5); // Cap X error to 2 meters
+        error(1) = std::clamp(error(1), -1.5, 1.5); // Cap Y error to 2 meters
+        error(2) = std::clamp(error(2), -1.5, 1.5); // Cap Y error to 2 meters
+        Eigen::Vector4d u = -K * error;
 
         // Feed forward
         u(0) += m * g; 
