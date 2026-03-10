@@ -23,6 +23,8 @@ All behaviors are tested in two environments — calm air and a 4 m/s crosswind 
 - ROS2
 - Gazebo
 - C++
+- Python
+- MATLAB
 
 ---
 
