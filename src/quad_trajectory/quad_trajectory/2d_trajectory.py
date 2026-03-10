@@ -87,7 +87,11 @@ class TwoDTrajectory(Node):
                 self.send_setpoint(tx, 0.0, tz)
                 self.history[name]['tx'].append(tx)
                 self.history[name]['tz'].append(tz)
-                self.step_idx += 1
+
+                # Only advance to next point when drone is close enough
+                dist = np.sqrt((self.curr_x - tx)**2 + (self.curr_z - tz)**2)
+                if dist < 0.3:  # tune this threshold
+                    self.step_idx += 1
             else:
                 self.next_state()
 

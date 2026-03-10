@@ -9,5 +9,7 @@
 !MATLAB/
 !MATLAB/**
 
+!readme.md
+
 # Keep .gitignore itself
 !.gitignore
