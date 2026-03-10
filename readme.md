@@ -18,7 +18,7 @@ All behaviors are tested in two environments — calm air and a 4 m/s crosswind 
 
 ---
 
-## Development Environment
+## System Requirements
 
 - ROS2
 - Gazebo
