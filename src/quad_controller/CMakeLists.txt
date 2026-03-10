@@ -40,10 +40,20 @@ ament_target_dependencies(lqr_controller_node
 )
 target_link_libraries(lqr_controller_node Eigen3::Eigen)
 
-# 5. Install
+# 5. Create Executable for PID Controller V2
+# add_executable(pid_controller_v2
+#   src/pid_controller_v2.cpp
+# )
+# ament_target_dependencies(pid_controller_v2
+#   rclcpp nav_msgs geometry_msgs std_msgs tf2 actuator_msgs
+# )
+# target_link_libraries(pid_controller_v2 Eigen3::Eigen)
+
+# 6. Install
 install(TARGETS
   pid_controller_node
   lqr_controller_node
+  # pid_controller_v2
   DESTINATION lib/${PROJECT_NAME}
 )
 

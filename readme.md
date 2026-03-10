@@ -18,11 +18,13 @@ All behaviors are tested in two environments — calm air and a 4 m/s crosswind 
 
 ---
 
-## System Requirements
+## Development Environment
 
 - ROS2
 - Gazebo
 - C++
+- Python
+- MATLAB
 
 ---
 
