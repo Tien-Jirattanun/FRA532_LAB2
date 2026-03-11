@@ -87,13 +87,13 @@ class ThreeDTrajectory(Node):
                 self.send_setpoint(tx, ty, tz)
 
                 # Record target only once per step
-                if (len(self.history[name]['tx']) == 0 or
-                        self.history[name]['tx'][-1] != tx or
-                        self.history[name]['ty'][-1] != ty or
-                        self.history[name]['tz'][-1] != tz):
-                    self.history[name]['tx'].append(tx)
-                    self.history[name]['ty'].append(ty)
-                    self.history[name]['tz'].append(tz)
+                # if (len(self.history[name]['tx']) == 0 or
+                #         self.history[name]['tx'][-1] != tx or
+                #         self.history[name]['ty'][-1] != ty or
+                #         self.history[name]['tz'][-1] != tz):
+                #     self.history[name]['tx'].append(tx)
+                #     self.history[name]['ty'].append(ty)
+                #     self.history[name]['tz'].append(tz)
 
                 # Only advance to next point when drone is close enough
                 dist = np.sqrt(
@@ -102,6 +102,9 @@ class ThreeDTrajectory(Node):
                     (self.curr_z - tz)**2
                 )
                 if dist < 0.3:  # tune this threshold
+                    self.history[name]['tx'].append(tx)
+                    self.history[name]['ty'].append(ty)
+                    self.history[name]['tz'].append(tz)
                     self.step_idx += 1
             else:
                 self.finish_trajectory()
