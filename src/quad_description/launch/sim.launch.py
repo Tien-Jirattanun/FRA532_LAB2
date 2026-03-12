@@ -39,7 +39,7 @@ def generate_launch_description():
     default_world = os.path.join(
         get_package_share_directory(package_name),
         "worlds",
-        # "empty.sdf"
+        # "empty.sdf",
         "wind.sdf",
     )
 
