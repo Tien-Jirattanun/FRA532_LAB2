@@ -10,6 +10,8 @@
 !MATLAB/**
 
 !readme.md
+!img/
+!img/**
 
 # Keep .gitignore itself
 !.gitignore
