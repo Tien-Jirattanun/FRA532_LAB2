@@ -10,6 +10,7 @@ from scipy.spatial import KDTree # Used for Nearest Neighbor calculation
 import time
 from ament_index_python.packages import get_package_share_directory
 import os
+from scipy.spatial.distance import directed_hausdorff
 
 class ThreeDTrajectory(Node):
     def __init__(self):
@@ -87,13 +88,13 @@ class ThreeDTrajectory(Node):
                 self.send_setpoint(tx, ty, tz)
 
                 # Record target only once per step
-                if (len(self.history[name]['tx']) == 0 or
-                        self.history[name]['tx'][-1] != tx or
-                        self.history[name]['ty'][-1] != ty or
-                        self.history[name]['tz'][-1] != tz):
-                    self.history[name]['tx'].append(tx)
-                    self.history[name]['ty'].append(ty)
-                    self.history[name]['tz'].append(tz)
+                # if (len(self.history[name]['tx']) == 0 or
+                #         self.history[name]['tx'][-1] != tx or
+                #         self.history[name]['ty'][-1] != ty or
+                #         self.history[name]['tz'][-1] != tz):
+                #     self.history[name]['tx'].append(tx)
+                #     self.history[name]['ty'].append(ty)
+                #     self.history[name]['tz'].append(tz)
 
                 # Only advance to next point when drone is close enough
                 dist = np.sqrt(
@@ -102,6 +103,9 @@ class ThreeDTrajectory(Node):
                     (self.curr_z - tz)**2
                 )
                 if dist < 0.3:  # tune this threshold
+                    self.history[name]['tx'].append(tx)
+                    self.history[name]['ty'].append(ty)
+                    self.history[name]['tz'].append(tz)
                     self.step_idx += 1
             else:
                 self.finish_trajectory()
@@ -117,6 +121,8 @@ class ThreeDTrajectory(Node):
         """Calculates spatial error using Nearest Neighbor (KDTree)."""
         fig = plt.figure(figsize=(20, 7))
         fig.suptitle('3D Trajectory', fontsize=16)
+        
+        summary = []
 
         for i, name in enumerate(self.traj_types):
             data = self.history[name]
@@ -138,18 +144,55 @@ class ThreeDTrajectory(Node):
                 mean_spatial_error = np.mean(distances)
                 max_spatial_error = np.max(distances)
                 rmse_spatial = np.sqrt(np.mean(distances**2))
+                
+                # Hausdorff
+                h1 = directed_hausdorff(actuals, targets)[0]
+                h2 = directed_hausdorff(targets, actuals)[0]
+                hausdorff = max(h1, h2)
+
+                # Path length ratio
+                def path_length(pts):
+                    return np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1))
+
+                ideal_len  = path_length(targets)
+                actual_len = path_length(actuals)
+                ratio      = actual_len / ideal_len
+
+                summary.append({
+                    'name': name,
+                    'mean': mean_spatial_error,
+                    'rmse': rmse_spatial,
+                    'max': max_spatial_error,
+                    'hausdorff': hausdorff,
+                    'ratio': ratio
+                })
 
                 # 4. Plotting
                 ax = fig.add_subplot(1, 3, i+1, projection='3d')
                 ax.plot(data['tx'], data['ty'], data['tz'], 'r--', label='Ideal Path', alpha=0.6)
                 ax.plot(data['ax'], data['ay'], data['az'], 'b-', label='Actual Path', linewidth=1.5)
-                
-                ax.set_title(f"{name}\nMean Spatial Err: {mean_spatial_error:.3f}m\nMax Spatial Err: {max_spatial_error:.3f}m")
+                ax.set_title(
+                    f'{name}\n'
+                    f'Mean: {mean_spatial_error:.3f}m  RMSE: {rmse_spatial:.3f}m\n'
+                    f'Max: {max_spatial_error:.3f}m  Hausdorff: {hausdorff:.3f}m\n'
+                    f'Path Ratio: {ratio:.3f}'
+                )
                 ax.set_xlabel('X'); ax.set_ylabel('Y'); ax.set_zlabel('Z')
                 ax.legend()
                 ax.grid(True)
                 
-                self.get_logger().info(f"Result for {name}: Mean Spatial Err={mean_spatial_error:.4f}m")
+                # self.get_logger().info(f"Result for {name}: Mean Spatial Err={mean_spatial_error:.4f}m")
+
+        # Summary table
+        self.get_logger().info('\n' + '-'*65)
+        self.get_logger().info(f"{'Trajectory':<12} {'Mean':>8} {'RMSE':>8} {'Max':>8} {'Hausdorff':>10} {'Ratio':>7}")
+        self.get_logger().info('-'*65)
+        for s in summary:
+            self.get_logger().info(
+                f"{s['name']:<12} {s['mean']:>8.4f} {s['rmse']:>8.4f} "
+                f"{s['max']:>8.4f} {s['hausdorff']:>10.4f} {s['ratio']:>7.3f}"
+            )
+        self.get_logger().info('-'*65)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()

@@ -9,6 +9,7 @@ from scipy.spatial import KDTree # The key for timing-independent error
 import time
 from ament_index_python.packages import get_package_share_directory
 import os
+from scipy.spatial.distance import directed_hausdorff
 
 class TwoDTrajectory(Node):
     def __init__(self):
@@ -85,12 +86,12 @@ class TwoDTrajectory(Node):
                 tz = self.df[name][self.step_idx]
                 
                 self.send_setpoint(tx, 0.0, tz)
-                self.history[name]['tx'].append(tx)
-                self.history[name]['tz'].append(tz)
 
                 # Only advance to next point when drone is close enough
                 dist = np.sqrt((self.curr_x - tx)**2 + (self.curr_z - tz)**2)
                 if dist < 0.3:  # tune this threshold
+                    self.history[name]['tx'].append(tx)
+                    self.history[name]['tz'].append(tz)
                     self.step_idx += 1
             else:
                 self.next_state()
@@ -106,6 +107,8 @@ class TwoDTrajectory(Node):
         """Generates plots based on spatial proximity rather than time-steps."""
         fig, axes = plt.subplots(1, len(self.trajectories), figsize=(18, 5))
         fig.suptitle('2D Trajectory', fontsize=16)
+        
+        summary = []
 
         for i, name in enumerate(self.trajectories):
             data = self.history[name]
@@ -123,19 +126,58 @@ class TwoDTrajectory(Node):
                 
                 mean_err = np.mean(distances)
                 max_err = np.max(distances)
+                rmse = np.sqrt(np.mean(distances**2))
+                
+                # Hausdorff
+                h1 = directed_hausdorff(actual_pts, target_pts)[0]
+                h2 = directed_hausdorff(target_pts, actual_pts)[0]
+                hausdorff = max(h1, h2)
+
+                # Path length ratio
+                def path_length(pts):
+                    return np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1))
+                
+                ideal_len  = path_length(target_pts)
+                actual_len = path_length(actual_pts)
+                ratio      = actual_len / ideal_len
+
+                summary.append({
+                    'name': name,
+                    'mean': mean_err,
+                    'rmse': rmse,
+                    'max': max_err,
+                    'hausdorff': hausdorff,
+                    'ratio': ratio
+                })
                 
                 # Plotting
                 ax = axes[i]
                 ax.plot(data['tx'], data['tz'], 'r--', label='Ideal Path', alpha=0.6)
                 ax.plot(data['ax'], data['az'], 'b-', label='Actual Path', linewidth=1.5)
                 
-                ax.set_title(f'{name}\nMean Spatial Err: {mean_err:.4f}m\nMax Err: {max_err:.4f}m')
+                ax.set_title(
+                    f'{name}\n'
+                    f'Mean: {mean_err:.4f}m  RMSE: {rmse:.4f}m\n'
+                    f'Max: {max_err:.4f}m  Hausdorff: {hausdorff:.4f}m\n'
+                    f'Path Ratio: {ratio:.3f}'
+                )
                 ax.set_xlabel('X Position (m)')
                 ax.set_ylabel('Z Position (m)')
                 ax.legend()
                 ax.grid(True)
                 
-                self.get_logger().info(f"{name} Results: Mean Spatial Error = {mean_err:.4f}m")
+                # self.get_logger().info(f"{name} Results: Mean Spatial Error = {mean_err:.4f}m")
+
+        # Summary table in logger
+        self.get_logger().info('\n' + '-'*65)
+        self.get_logger().info(f"{'Trajectory':<12} {'Mean':>8} {'RMSE':>8} {'Max':>8} {'Hausdorff':>10} {'Ratio':>7}")
+        self.get_logger().info('-'*65)
+        for s in summary:
+            self.get_logger().info(
+                f"{s['name']:<12} {s['mean']:>8.4f} {s['rmse']:>8.4f} "
+                f"{s['max']:>8.4f} {s['hausdorff']:>10.4f} {s['ratio']:>7.3f}"
+            )
+        self.get_logger().info('-'*65)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()
