@@ -178,6 +178,28 @@ R = diag([1, 2, 2, 2])  % [T, τ_x, τ_y, τ_z]
 
 ## Results
 
+### Step Responses (X, Y, Z)
+
+#### Step Response with no wind
+
+| Axis | Rise Time (s) | Overshoot (%) | Settling Time (s) | SS Error (m) |
+|------|--------------|---------------|-------------------|--------------|
+| X    | 1.15         | 0.0           | 1.58              | 0.0106       |
+| Y    | 1.13         | 0.0           | 1.50              | 0.0098       |
+| Z    | 1.77         | 0.0           | 2.22              | 0.0361       |
+
+![Step Response with no wind](img/step_response_no_wind.png)
+
+#### Step Response with wind
+
+| Axis | Rise Time (s) | Overshoot (%) | Settling Time (s) | SS Error (m) |
+|------|--------------|---------------|-------------------|--------------|
+| X    | N/A          | 0.0           | N/A               | 0.2046       |
+| Y    | N/A          | 0.0           | N/A               | 0.1014       |
+| Z    | 1.73         | 0.0           | 2.15              | 0.0314       |
+
+![Step Response with wind](img/step_response_wind.png)
+
 ### 2D Trajectories
 
 | Trajectory | Condition | Mean Error (m) | RMSE (m) | Max Error (m) | Hausdorff (m) | Path Ratio |

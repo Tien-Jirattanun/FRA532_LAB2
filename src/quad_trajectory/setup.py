@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             '2d_trajectory = quad_trajectory.2d_trajectory:main',
             '3d_trajectory = quad_trajectory.3d_trajectory:main',
+            'step_response_evaluator = quad_trajectory.step_response_evaluator:main',
         ],
     },
 )
