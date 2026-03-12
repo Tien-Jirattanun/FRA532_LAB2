@@ -180,22 +180,32 @@ R = diag([1, 2, 2, 2])  % [T, τ_x, τ_y, τ_z]
 
 ### 2D Trajectories
 
-| Trajectory | Condition | Mean Error (m) | Max Error (m) |
-|---|---|---|---|
-| Line | No wind | 0.0449 | 0.0667 |
-| Sine Wave | No wind | 0.1609 | 0.5066 |
-| Triangle Wave | No wind | 0.0474 | 0.1851 |
-| Line | Windy | 0.0203 | 0.1917 |
-| Sine Wave | Windy | 0.1214 | 0.3093 |
-| Triangle Wave | Windy | 0.0791 | 0.2239 |
+| Trajectory | Condition | Mean Error (m) | RMSE (m) | Max Error (m) | Hausdorff (m) | Path Ratio |
+|---|---|---|---|---|---|---|
+| Line | No Wind | 0.0345 | 0.0346 | 0.0494 | 0.2700 | 0.987 |
+| Sine Wave | No Wind | 0.0288 | 0.0313 | 0.0569 | 0.2694 | 0.991 |
+| Zriangle Wave | No Wind | 0.0301 | 0.0328 | 0.0957 | 0.2647 | 0.982 |
+| Line | Wind | 0.0119 | 0.0185 | 0.1981 | 0.2892 | 0.996 |
+| Sine Wave | Wind | 0.1489 | 0.1569 | 0.2284 | 0.2886 | 0.997 |
+| Triangle Wave | Wind | 0.1051 | 0.1086 | 0.2069 | 0.2932 | 0.994 |
+
+#### 2D Trajectory with no wind
+![2D Trajectory with no wind](img/2d_no_wind.png)
+#### 2D Trajectory with wind
+![2D Trajectory with wind](img/2d_wind.png)
 
 ### 3D Trajectories
 
-| Trajectory | Condition | Mean Error (m) | Max Error (m) |
-|---|---|---|---|
-| Line | No wind | 0.0038 | 0.042 |
-| Helix | No wind | 0.093 | 0.121 |
-| Möbius | No wind | 0.262 | 1.297 |
-| Line | Windy | 0.176 | 0.238 |
-| Helix | Windy | 0.202 | 0.333 |
-| Möbius | Windy | 0.336 | 1.939 |
+| Trajectory | Condition | Mean Error (m) | RMSE (m) | Max Error (m) | Hausdorff (m) | Path Ratio |
+|---|---|---|---|---|---|---|
+| Line | No Wind | 0.040 | 0.040 | 0.044 | 0.250 | 0.989 |
+| Helix | No Wind | 0.048 | 0.048 | 0.061 | 0.283 | 0.993 |
+| Mobius | No Wind | 0.048 | 0.049 | 0.074 | 0.282 | 0.997 |
+| Line | Wind | 0.175 | 0.175 | 0.212 | 0.296 | 0.996 |
+| Helix | Wind | 0.145 | 0.162 | 0.260 | 0.267 | 0.992 |
+| Mobius | Wind | 0.173 | 0.181 | 0.259 | 0.290 | 0.999 |
+
+#### 3D Trajectory with no wind
+![3D Trajectory with no wind](img/3d_no_wind.png)
+#### 3D Trajectory with wind
+![3D Trajectory with wind](img/3d_wind.png)
